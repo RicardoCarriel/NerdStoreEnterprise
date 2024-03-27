@@ -9,7 +9,7 @@ using NSE.WebApp.MVC.Services;
 namespace NSE.WebApp.MVC.Controllers
 {
 
-    public class IdentidadeController : Controller
+    public class IdentidadeController : MainController
     {
         private readonly IAutenticacaoService _autenticacaoService;
 
@@ -27,17 +27,14 @@ namespace NSE.WebApp.MVC.Controllers
 
         [HttpPost]
         [Route("nova-conta")]
-        public async Task<IActionResult> Register(RegisterUserViewModel registerUser)
+        public async Task<IActionResult> Register(RegisterUserViewModel usuarioRegistro)
         {
-            if (!ModelState.IsValid) return View(registerUser);
+            if (!ModelState.IsValid) return View(usuarioRegistro);
 
-            //API - Registro
+            var resposta = await _autenticacaoService.Register(usuarioRegistro);
 
-            var resposta = await _autenticacaoService.Register(registerUser);
+            if (ResponsePossuiErros(resposta.ResponseResult)) return View(usuarioRegistro);
 
-            //if (false) return View(registerUser);
-
-            // Realizar login na app
             await RealizarLogin(resposta);
 
             return RedirectToAction("Index", "Home");
@@ -45,33 +42,35 @@ namespace NSE.WebApp.MVC.Controllers
 
         [HttpGet]
         [Route("login")]
-        public IActionResult Login()
+        public IActionResult Login(string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login(LoginUserViewModel loginUser)
+        public async Task<IActionResult> Login(LoginUserViewModel usuarioLogin, string returnUrl = null)
         {
-            if (!ModelState.IsValid) return View(loginUser);
+            ViewData["ReturnUrl"] = returnUrl;
+            if (!ModelState.IsValid) return View(usuarioLogin);
 
-            //API - Login
-            var resposta = await _autenticacaoService.Login(loginUser);
+            var resposta = await _autenticacaoService.Login(usuarioLogin);
 
-            //if (false) return View(loginUser);
+            if (ResponsePossuiErros(resposta.ResponseResult)) return View(usuarioLogin);
 
-            // Realizar login na app
             await RealizarLogin(resposta);
 
+            if (string.IsNullOrEmpty(returnUrl)) return RedirectToAction("Index", "Home");
 
-            return RedirectToAction("Index", "Home");
+            return LocalRedirect(returnUrl);
         }
 
         [HttpGet]
         [Route("sair")]
         public async Task<IActionResult> Logout()
         {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
 
@@ -91,7 +90,8 @@ namespace NSE.WebApp.MVC.Controllers
                 IsPersistent = true
             };
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
         }

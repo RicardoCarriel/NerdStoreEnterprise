@@ -1,45 +1,55 @@
 ﻿using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using NSE.WebApp.MVC.Extensions;
 using NSE.WebApp.MVC.Models;
 
 namespace NSE.WebApp.MVC.Services
 {
-    public class AutenticacaoService : IAutenticacaoService
+    public class AutenticacaoService : Service, IAutenticacaoService
     {
         private readonly HttpClient _httpClient;
 
-        public AutenticacaoService(HttpClient httpClient)
+        public AutenticacaoService(HttpClient httpClient,
+            IOptions<AppSettings> settings)
         {
+            httpClient.BaseAddress = new Uri(settings.Value.AutenticacaoUrl);
+
             _httpClient = httpClient;
         }
 
-        public async Task<LoginResponseViewModel> Login(LoginUserViewModel loginUser)
+        public async Task<LoginResponseViewModel> Login(LoginUserViewModel usuarioLogin)
         {
-            var loginContent = new StringContent(
-                JsonSerializer.Serialize(loginUser),
-                Encoding.UTF8,
-                "application/json");
+            var loginContent = ObterConteudo(usuarioLogin);
 
-            var response = await _httpClient.PostAsync("https://localhost:5001/api/identidade/autenticar", loginContent);
+            var response = await _httpClient.PostAsync("/api/identidade/autenticar", loginContent);
 
-            var options = new JsonSerializerOptions
+            if (!TratarErrosResponse(response))
             {
-                PropertyNameCaseInsensitive = true,
-            };
+                return new LoginResponseViewModel()
+                {
+                    ResponseResult = await DeserializarObjetoResponse<ResponseResult>(response)
+                };
+            }
 
-            return JsonSerializer.Deserialize<LoginResponseViewModel>(await response.Content.ReadAsStringAsync(), options);
+            return await DeserializarObjetoResponse<LoginResponseViewModel>(response);
         }
 
-        public async Task<LoginResponseViewModel> Register(RegisterUserViewModel registerUser)
+        public async Task<LoginResponseViewModel> Register(RegisterUserViewModel usuarioRegistro)
         {
-            var registerContent = new StringContent(
-                JsonSerializer.Serialize(registerUser),
-                Encoding.UTF8,
-                "application/json");
+            var registroContent = ObterConteudo(usuarioRegistro);
 
-            var response = await _httpClient.PostAsync("https://localhost:5001/api/identidade/nova-conta", registerContent);
+            var response = await _httpClient.PostAsync("/api/identidade/nova-conta", registroContent);
 
-            return JsonSerializer.Deserialize<LoginResponseViewModel>(await response.Content.ReadAsStringAsync());
+            if (!TratarErrosResponse(response))
+            {
+                return new LoginResponseViewModel()
+                {
+                    ResponseResult = await DeserializarObjetoResponse<ResponseResult>(response)
+                };
+            }
+
+            return await DeserializarObjetoResponse<LoginResponseViewModel>(response);
         }
     }
 }

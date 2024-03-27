@@ -8,5 +8,5 @@ public interface IAutenticacaoService
 
     Task<LoginResponseViewModel> Register(RegisterUserViewModel registerUser);
 
-    
+
 }
