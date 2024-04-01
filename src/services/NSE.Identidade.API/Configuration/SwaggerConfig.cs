@@ -11,7 +11,7 @@ namespace NSE.Identidade.API.Configuration
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "NerdStore Enterprise Identity API",
-                    Description = "Esta API faz parte do curso ASP.NET COre Enterprise Applications.",
+                    Description = "Esta API faz parte do curso ASP.NET Core Enterprise Applications.",
                     Contact = new OpenApiContact() { Name = "Ricardo Carriel", Email = "rick01.carriel@gmail.com" },
                     License = new OpenApiLicense() { Name = "MIT", Url = new Uri("https://opensource.org/licences/MIT") }
                 });
