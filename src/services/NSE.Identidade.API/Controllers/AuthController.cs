@@ -1,11 +1,14 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using EasyNetQ;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using NSE.Core.Messages.Integration;
 using NSE.Identidade.API.Models;
+using NSE.MessageBus;
 using NSE.WebApi.Core.Controllers;
 using NSE.WebApi.Core.Identidade;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
@@ -19,13 +22,16 @@ namespace NSE.Identidade.API.Controllers
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly AppSettings _appSettings;
+        private readonly IMessageBus _bus;
 
         public AuthController(SignInManager<IdentityUser> signInManager, 
             UserManager<IdentityUser> userManager,
-            IOptions<AppSettings> appSettings)
+            IOptions<AppSettings> appSettings,
+            IMessageBus bus)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _bus = bus;
             _appSettings = appSettings.Value;
         }
 
@@ -45,6 +51,15 @@ namespace NSE.Identidade.API.Controllers
 
             if (result.Succeeded)
             {
+                // Alguma coisa aqui => integracao
+                var clientResult = await RegisterClient(registerUser);
+
+                if (!clientResult.ValidationResult.IsValid)
+                {
+                    await _userManager.DeleteAsync(user);
+                    return CustomResponse(clientResult.ValidationResult);
+                }
+
                 return CustomResponse(await GerarJwt(registerUser.Email));
             }
 
@@ -55,6 +70,8 @@ namespace NSE.Identidade.API.Controllers
 
             return CustomResponse();
         }
+
+        
 
         [HttpPost("autenticar")]
         public async Task<ActionResult> Login(LoginUserViewModel loginUser)
@@ -148,5 +165,22 @@ namespace NSE.Identidade.API.Controllers
             => (long)Math.Round((date.ToUniversalTime() - new DateTimeOffset(
                 1970, 1, 1, 0, 0, 0, TimeSpan.Zero)).TotalSeconds);
 
+        private async Task<ResponseMessage> RegisterClient(RegisterUserViewModel registerUser)
+        {
+            var user = await _userManager.FindByEmailAsync(registerUser.Email);
+            var registeredUser = new RegisteredUserIntegrationEvent(
+                Guid.Parse(user.Id), registerUser.Nome, registerUser.Email, registerUser.Cpf);
+
+            try
+            {
+                return await _bus.RequestAsync<RegisteredUserIntegrationEvent, ResponseMessage>(registeredUser);
+            }
+            catch
+            {
+                await _userManager.DeleteAsync(user);
+                throw;
+            }
+
+        }
     }
 }

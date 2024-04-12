@@ -8,7 +8,7 @@ using NSE.Core.Messages;
 namespace NSE.Clientes.API.Application.Commands
 {
     public class ClienteCommandHandler : CommandHandler,
-        IRequestHandler<RegistrarClienteCommand, ValidationResult>
+        IRequestHandler<RegisterClientCommand, ValidationResult>
     {
         private readonly IClienteRepository _clienteRepository;
 
@@ -17,7 +17,7 @@ namespace NSE.Clientes.API.Application.Commands
             _clienteRepository = clienteRepository;
         }
 
-        public async Task<ValidationResult> Handle(RegistrarClienteCommand message, CancellationToken cancellationToken)
+        public async Task<ValidationResult> Handle(RegisterClientCommand message, CancellationToken cancellationToken)
         {
             if (!message.IsValid()) return message.ValidationResult;
 

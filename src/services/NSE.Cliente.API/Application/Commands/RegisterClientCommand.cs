@@ -3,14 +3,14 @@ using FluentValidation;
 
 namespace NSE.Clientes.API.Application.Commands
 {
-    public class RegistrarClienteCommand : Command
+    public class RegisterClientCommand : Command
     {
         public Guid Id { get; private set; }
         public string Nome { get; private set; }
         public string Email { get; private set; }
         public string Cpf { get; private set; }
 
-        public RegistrarClienteCommand(Guid id, string nome, string email, string cpf)
+        public RegisterClientCommand(Guid id, string nome, string email, string cpf)
         {
             AggregateId = id;
             Id = id;
@@ -21,13 +21,13 @@ namespace NSE.Clientes.API.Application.Commands
 
         public override bool IsValid()
         {
-            ValidationResult = new RegistrarClienteValidation().Validate(this);
+            ValidationResult = new RegisterClientValidation().Validate(this);
             return ValidationResult.IsValid;
         }
 
-        public class RegistrarClienteValidation : AbstractValidator<RegistrarClienteCommand>
+        public class RegisterClientValidation : AbstractValidator<RegisterClientCommand>
         {
-            public RegistrarClienteValidation()
+            public RegisterClientValidation()
             {
                 RuleFor(c => c.Id)
                     .NotEqual(Guid.Empty)
