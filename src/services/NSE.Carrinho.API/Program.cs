@@ -1,11 +1,19 @@
+using NSE.Carrinho.API.Configuration;
+using NSE.WebApi.Core.Identidade;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddApiConfiguration(builder.Configuration);
+
+builder.Services.AddJwtConfiguration(builder.Configuration);
+
+builder.Services.AddSwaggerConfiguration();
+
+builder.Services.RegisterServices();
 
 var app = builder.Build();
 
